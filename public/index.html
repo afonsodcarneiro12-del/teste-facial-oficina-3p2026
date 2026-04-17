@@ -1,482 +1,209 @@
-!DOCTYPE html>
-
-<html>
-
-
+<!DOCTYPE html>
+<html lang="pt">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reconhecimento Facial Alunos</title>
+    <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.min.js"></script>
+    
+    <style>
+        :root {
+            --primary: #6366f1;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text: #f8fafc;
+        }
 
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
 
-<meta charset="UTF-8">
+        .container {
+            background-color: var(--card-bg);
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 800px;
+            width: 90%;
+        }
 
+        h2 {
+            margin-bottom: 1.5rem;
+            font-weight: 300;
+            letter-spacing: 1px;
+            color: #818cf8;
+        }
 
-<title>Reconhecimento Facial Alunos</title>
+        .video-wrapper {
+            position: relative;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            border: 3px solid #334155;
+            background: #000;
+            line-height: 0;
+        }
 
+        video {
+            width: 100%;
+            height: auto;
+            max-width: 720px;
+        }
 
-<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.min.js"></script>
+        .controls {
+            margin-top: 1.5rem;
+        }
 
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.8rem 2rem;
+            font-size: 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
 
-<style>
+        button:hover {
+            background-color: #4f46e5;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(99, 102, 241, 0.4);
+        }
 
+        button:active {
+            transform: translateY(0);
+        }
 
-body {
-
-  font-family: Arial;
-
-  text-align: center;
-
-}
-
-
-video {
-
-  border: 2px solid black;
-
-}
-
-
-canvas {
-
-  position: absolute;
-
-}
-
-
-</style>
-
-
+        #status-bar {
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: #94a3b8;
+        }
+    </style>
 </head>
-
 
 <body>
 
+<div class="container">
+    <h2>SISTEMA DE RECONHECIMENTO</h2>
+    
+    <div class="video-wrapper">
+        <video id="video" width="720" height="560" autoplay muted></video>
+    </div>
 
-<h2>Reconhecimento Facial + Emoções</h2>
+    <div class="controls">
+        <button onclick="capture()">
+            📸 Capturar e Identificar
+        </button>
+    </div>
 
-
-<video id="video"
-
- width="720"
-
- height="560"
-
- autoplay
-
- muted>
-
-</video>
-
-
-<br><br>
-
-
-<button onclick="capture()">
-
-Capturar Foto
-
-</button>
-
+    <div id="status-bar">A aguardar inicialização dos modelos...</div>
+</div>
 
 <script>
-
-
-const video =
-
- document.getElementById("video");
-
-
-let faceMatcher;
-
-
-// ============================
-
-// CARREGAR MODELOS
-
-// ============================
-
-
-async function loadModels() {
-
-
- await faceapi.nets.ssdMobilenetv1.loadFromUri('/models');
-
-
- await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
-
-
- await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
-
-
- await faceapi.nets.faceExpressionNet.loadFromUri('/models');
-
-
- console.log("Modelos carregados");
-
-
-}
-
-
-// ============================
-
-// CARREGAR ALUNOS
-
-// ============================
-
-
-async function loadStudents() {
-
-
- const labels = [
-
-   "luissantos",
-
-   "maria"
-
- ];
-
-
- return Promise.all(
-
-
-  labels.map(async label => {
-
-
-   const descriptions = [];
-
-
-   for (let i = 1; i <= 1; i++) {
-
-
-    const img =
-
-      await faceapi.fetchImage(
-
-       `/students/${label}/${i}.jpg`
-
-      );
-
-
-    const detection =
-
-      await faceapi
-
-        .detectSingleFace(img)
-
-        .withFaceLandmarks()
-
-        .withFaceDescriptor();
-
-
-    descriptions.push(
-
-      detection.descriptor
-
-    );
-
-
-   }
-
-
-   return new faceapi
-
-     .LabeledFaceDescriptors(
-
-       label,
-
-       descriptions
-
-     );
-
-
-  })
-
-
- );
-
-
-}
-
-
-// ============================
-
-// CONFIGURAR RECONHECIMENTO
-
-// ============================
-
-
-async function setupRecognition() {
-
-
- const labeledDescriptors =
-
-   await loadStudents();
-
-
- faceMatcher =
-
-   new faceapi.FaceMatcher(
-
-     labeledDescriptors,
-
-     0.6
-
-   );
-
-
- console.log("Reconhecimento pronto");
-
-
-}
-
-
-// ============================
-
-// INICIAR WEBCAM
-
-// ============================
-
-
-async function startVideo() {
-
-
- const stream =
-
-   await navigator
-
-    .mediaDevices
-
-    .getUserMedia({ video: true });
-
-
- video.srcObject = stream;
-
-
-}
-
-
-// ============================
-
-// INICIALIZAÇÃO
-
-// ============================
-
-
-async function init() {
-
-
- await loadModels();
-
-
- await setupRecognition();
-
-
- await startVideo();
-
-
-}
-
-
-init();
-
-
-// ============================
-
-// CAPTURAR FOTO
-
-// ============================
-
-
-async function capture() {
-
-
- const detections =
-
-  await faceapi
-
-   .detectAllFaces(video)
-
-   .withFaceLandmarks()
-
-   .withFaceExpressions()
-
-   .withFaceDescriptors();
-
-
- if (detections.length === 0) {
-
-
-  alert("Nenhum rosto detectado");
-
-
-  return;
-
-
- }
-
-
- // ============================
-
- // DETECTAR EMOÇÃO
-
- // ============================
-
-
- const expressions =
-
-   detections[0].expressions;
-
-
- let emotion = "neutral";
-
-
- let max = 0;
-
-
- for (let key in expressions) {
-
-
-  if (expressions[key] > max) {
-
-
-   max = expressions[key];
-
-   emotion = key;
-
-
-  }
-
-
- }
-
-
- console.log("Emoção:", emotion);
-
-
- // ============================
-
- // IDENTIFICAR ALUNO
-
- // ============================
-
-
- const bestMatch =
-
-  faceMatcher
-
-   .findBestMatch(
-
-    detections[0].descriptor
-
-   );
-
-
- const name =
-
-  bestMatch.toString();
-
-
- console.log("Aluno:", name);
-
-
- // ============================
-
- // CAPTURAR IMAGEM
-
- // ============================
-
-
- const snapshot =
-
-   document.createElement("canvas");
-
-
- snapshot.width = video.width;
-
-
- snapshot.height = video.height;
-
-
- const ctx = snapshot.getContext("2d");
-
-
- ctx.drawImage(
-
-   video,
-
-   0,
-
-   0
-
- );
-
-
- snapshot.toBlob(
-
-  async (blob) => {
-
-
-   const formData =
-
-     new FormData();
-
-
-   formData.append(
-
-     "photo",
-
-     blob
-
-   );
-
-
-   formData.append(
-
-     "emotion",
-
-     emotion
-
-   );
-
-
-   formData.append(
-
-     "name",
-
-     name
-
-   );
-
-
-   await fetch("/upload", {
-
-
-    method: "POST",
-
-
-    body: formData
-
-
-   });
-
-
-   alert(
-
-    "Aluno: " + name +
-
-    "\nEmoção: " + emotion
-
-   );
-
-
- });
-
-
-}
-
-
+    // MANTÉM TODO O TEU CÓDIGO JAVASCRIPT AQUI IGUAL AO QUE TINHAS
+    const video = document.getElementById("video");
+    const status = document.getElementById("status-bar");
+    let faceMatcher;
+
+    async function loadModels() {
+        status.innerText = "A carregar modelos de IA...";
+        await faceapi.nets.ssdMobilenetv1.loadFromUri('/models');
+        await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
+        await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
+        await faceapi.nets.faceExpressionNet.loadFromUri('/models');
+        console.log("Modelos carregados");
+    }
+
+    async function loadStudents() {
+        status.innerText = "A processar base de dados de alunos...";
+        const labels = ["luissantos", "maria"];
+        return Promise.all(
+            labels.map(async label => {
+                const descriptions = [];
+                for (let i = 1; i <= 1; i++) {
+                    const img = await faceapi.fetchImage(`/students/${label}/${i}.jpg`);
+                    const detection = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
+                    descriptions.push(detection.descriptor);
+                }
+                return new faceapi.LabeledFaceDescriptors(label, descriptions);
+            })
+        );
+    }
+
+    async function setupRecognition() {
+        const labeledDescriptors = await loadStudents();
+        faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.6);
+        status.innerText = "Sistema pronto para uso!";
+    }
+
+    async function startVideo() {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+    }
+
+    async function init() {
+        await loadModels();
+        await setupRecognition();
+        await startVideo();
+    }
+
+    init();
+
+    async function capture() {
+        status.innerText = "A analisar rosto...";
+        const detections = await faceapi.detectAllFaces(video).withFaceLandmarks().withFaceExpressions().withFaceDescriptors();
+
+        if (detections.length === 0) {
+            alert("Nenhum rosto detectado");
+            status.innerText = "Erro: Rosto não encontrado.";
+            return;
+        }
+
+        const expressions = detections[0].expressions;
+        let emotion = "neutral";
+        let max = 0;
+        for (let key in expressions) {
+            if (expressions[key] > max) {
+                max = expressions[key];
+                emotion = key;
+            }
+        }
+
+        const bestMatch = faceMatcher.findBestMatch(detections[0].descriptor);
+        const name = bestMatch.toString();
+
+        const snapshot = document.createElement("canvas");
+        snapshot.width = video.width;
+        snapshot.height = video.height;
+        const ctx = snapshot.getContext("2d");
+        ctx.drawImage(video, 0, 0);
+
+        snapshot.toBlob(async (blob) => {
+            const formData = new FormData();
+            formData.append("photo", blob);
+            formData.append("emotion", emotion);
+            formData.append("name", name);
+
+            await fetch("/upload", { method: "POST", body: formData });
+            
+            status.innerText = "Identificado: " + name;
+            alert("Aluno: " + name + "\nEmoção: " + emotion);
+        });
+    }
 </script>
 
-
 </body>
-
-
 </html>

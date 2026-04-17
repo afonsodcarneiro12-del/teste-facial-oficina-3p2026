@@ -13,6 +13,9 @@ app.use(cors());
 
 app.use(express.static("public"));
 
+// SERVIR MODELS (MUITO IMPORTANTE) PARA O ACESSO REFERENCIAL
+
+app.use('/models', express.static('models')); 
 
 const storage = multer.diskStorage({
 
